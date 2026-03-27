@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AAPAT — Aapad Aur Pratyutthan Tantra | Disaster Response Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<!-- <link rel="stylesheet" href="styles.css"> -->
+ <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ALERT OVERLAY -->
+<div class="alert-overlay" id="alertOverlay"></div>
+
+<!-- MAP TOOLTIP -->
+<div class="map-tooltip" id="mapTooltip" style="display:none;"></div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon"></div>
+    <div>
+      <div class="logo-text">AA<span>PAT</span></div>
+      <div class="logo-sub">AAPAD AUR PRATYUTTHAN TANTRA · INDIA</div>
+    </div>
+  </div>
+  <div class="header-center">
+    <div class="alert-ticker">⚠ LIVE</div>
+    <div class="ticker-scroll">
+      <span class="ticker-inner" id="tickerText">
+        FLASH FLOOD WARNING: Brahmaputra Basin, Assam · CYCLONE ALERT: Bay of Bengal Category 3 · LANDSLIDE RISK: Shimla District HP · EARTHQUAKE M4.2: Uttarakhand recorded 22 mins ago · FLOOD RESPONSE TEAM deployed to Varanasi · RESCUE OPERATION ACTIVE: 3 teams in field ·
+      </span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot">
+      <span class="dot"></span>SYSTEM ONLINE
+    </div>
+    <div class="status-dot">
+      <span class="dot amber"></span><span id="activeCount">47</span> ACTIVE
+    </div>
+    <div class="time-display" id="clockDisplay">00:00:00</div>
+  </div>
+</header>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-val" style="color:var(--accent)" id="statCritical">12</div>
+    <div class="stat-label">Critical</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val" style="color:var(--high)" id="statHigh">23</div>
+    <div class="stat-label">High Alert</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val" style="color:var(--amber)" id="statMedium">31</div>
+    <div class="stat-label">Moderate</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val" style="color:var(--green)" id="statResponders">8</div>
+    <div class="stat-label">Responders</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val" style="color:var(--cyan)" id="statAffected">1.2L</div>
+    <div class="stat-label">Affected</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val" style="color:var(--text)" id="statAvgResponse">18<span style="font-size:12px">m</span></div>
+    <div class="stat-label">Avg Response</div>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <button class="tab-btn active" data-tab="map" onclick="switchTab('map')">
+    <span class="tab-icon">🗺</span> LIVE MAP
+    <span class="tab-badge" id="mapBadge">47</span>
+  </button>
+  <button class="tab-btn" data-tab="report" onclick="switchTab('report')">
+    <span class="tab-icon">📡</span> REPORT INCIDENT
+  </button>
+  <button class="tab-btn" data-tab="coord" onclick="switchTab('coord')">
+    <span class="tab-icon">⚡</span> COORDINATION
+    <span class="tab-badge" id="coordBadge">3</span>
+  </button>
+  <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard')">
+    <span class="tab-icon">📊</span> ANALYTICS
+  </button>
+  <button class="tab-btn" data-tab="alerts" onclick="switchTab('alerts')">
+    <span class="tab-icon">🔔</span> ALERTS
+    <span class="tab-badge" id="alertsBadge">9</span>
+  </button>
+</div>
+
+<!-- PAGES -->
+
+<!-- MAP PAGE -->
+<div class="page active" id="page-map">
+  <div class="page-map">
+    <!-- Sidebar Left: Incident List -->
+    <div class="sidebar-left">
+      <div class="panel-header">
+        <span class="panel-title">Active Incidents</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">LIVE</span>
+      </div>
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+      <div class="incident-list" id="incidentList"></div>
+    </div>
+
+    <!-- Map Center -->
+    <div class="map-area">
+      <div class="map-controls">
+        <button class="map-btn" onclick="zoomMap(1.2)" title="Zoom In">+</button>
+        <button class="map-btn" onclick="zoomMap(0.8)" title="Zoom Out">−</button>
+        <button class="map-btn" onclick="resetMapView()" title="Reset">⌖</button>
+        <button class="map-btn" onclick="toggleSafeZones()" title="Safe Zones">🟢</button>
+        <button class="map-btn" onclick="toggleHeatmap()" title="Heatmap">🔥</button>
+      </div>
+
+      <div class="map-stats">
+        <div class="map-stat-card">
+          <div class="msc-val" style="color:var(--accent)" id="mapLiveCount">47</div>
+          <div class="msc-label">Live Incidents</div>
+        </div>
+        <div class="map-stat-card">
+          <div class="msc-val" style="color:var(--green)">14</div>
+          <div class="msc-label">Safe Zones</div>
+        </div>
+        <div class="map-stat-card">
+          <div class="msc-val" style="color:var(--cyan)">8</div>
+          <div class="msc-label">Teams Active</div>
+        </div>
+      </div>
+
+      <svg id="india-map" viewBox="0 0 700 780" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background -->
+        <rect width="700" height="780" fill="#080b11"/>
+        <!-- Grid lines -->
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a2030" stroke-width="0.5"/>
+          </pattern>
+          <radialGradient id="glow-red" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ff3b2e" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#ff3b2e" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="glow-amber" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ff8c00" stop-opacity="0.5"/>
+            <stop offset="100%" stop-color="#ff8c00" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="glow-green" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#00d97e" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#00d97e" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="700" height="780" fill="url(#grid)"/>
+
+        <!-- India States (simplified path polygons) -->
+        <!-- Jammu & Kashmir -->
+        <path class="india-state base" id="state-jk"
+          d="M 185,30 L 220,25 L 265,40 L 280,65 L 270,90 L 240,100 L 210,95 L 190,75 Z"
+          data-state="Jammu &amp; Kashmir"/>
+        <!-- Himachal Pradesh -->
+        <path class="india-state mild" id="state-hp"
+          d="M 240,100 L 270,90 L 290,110 L 275,130 L 255,135 L 240,120 Z"
+          data-state="Himachal Pradesh"/>
+        <!-- Punjab -->
+        <path class="india-state safe" id="state-pb"
+          d="M 210,95 L 240,100 L 240,120 L 225,135 L 205,130 L 200,110 Z"
+          data-state="Punjab"/>
+        <!-- Haryana -->
+        <path class="india-state base" id="state-hr"
+          d="M 225,135 L 240,120 L 255,135 L 260,155 L 240,160 L 220,155 Z"
+          data-state="Haryana"/>
+        <!-- Uttarakhand -->
+        <path class="india-state warm" id="state-uk"
+          d="M 275,130 L 290,110 L 310,120 L 320,140 L 300,155 L 275,150 Z"
+          data-state="Uttarakhand"/>
+        <!-- Delhi -->
+        <ellipse class="india-state base" cx="240" cy="165" rx="12" ry="10" data-state="Delhi"/>
+        <!-- Uttar Pradesh -->
+        <path class="india-state mild" id="state-up"
+          d="M 240,160 L 260,155 L 300,155 L 330,165 L 360,180 L 350,215 L 310,220 L 270,215 L 250,195 L 235,180 Z"
+          data-state="Uttar Pradesh"/>
+        <!-- Rajasthan -->
+        <path class="india-state base" id="state-rj"
+          d="M 200,155 L 220,155 L 235,180 L 230,220 L 220,250 L 195,265 L 170,250 L 155,220 L 160,185 L 175,165 Z"
+          data-state="Rajasthan"/>
+        <!-- Gujarat -->
+        <path class="india-state hot" id="state-gj"
+          d="M 155,265 L 175,265 L 195,290 L 200,320 L 180,340 L 155,345 L 135,325 L 125,300 L 130,275 Z"
+          data-state="Gujarat"/>
+        <!-- Maharashtra -->
+        <path class="india-state warm" id="state-mh"
+          d="M 200,290 L 240,285 L 275,280 L 290,310 L 285,345 L 265,365 L 235,370 L 205,360 L 185,345 L 185,315 Z"
+          data-state="Maharashtra"/>
+        <!-- Madhya Pradesh -->
+        <path class="india-state mild" id="state-mp"
+          d="M 230,220 L 270,215 L 310,220 L 340,230 L 345,270 L 325,285 L 290,290 L 250,285 L 230,265 L 220,245 Z"
+          data-state="Madhya Pradesh"/>
+        <!-- Bihar -->
+        <path class="india-state hot" id="state-br"
+          d="M 360,180 L 395,175 L 415,185 L 410,215 L 385,225 L 360,220 L 350,205 Z"
+          data-state="Bihar"/>
+        <!-- Jharkhand -->
+        <path class="india-state mild" id="state-jh"
+          d="M 360,220 L 385,225 L 410,215 L 420,240 L 415,265 L 390,275 L 360,265 L 345,250 L 345,230 Z"
+          data-state="Jharkhand"/>
+        <!-- West Bengal -->
+        <path class="india-state warm" id="state-wb"
+          d="M 415,185 L 445,180 L 460,205 L 455,240 L 440,265 L 420,270 L 415,245 L 415,215 Z"
+          data-state="West Bengal"/>
+        <!-- Odisha -->
+        <path class="india-state hot" id="state-od"
+          d="M 390,275 L 415,265 L 440,265 L 450,285 L 445,315 L 425,330 L 400,325 L 380,305 Z"
+          data-state="Odisha"/>
+        <!-- Chhattisgarh -->
+        <path class="india-state mild" id="state-cg"
+          d="M 345,250 L 360,265 L 390,275 L 385,305 L 365,315 L 340,305 L 325,285 L 330,260 Z"
+          data-state="Chhattisgarh"/>
+        <!-- Telangana -->
+        <path class="india-state base" id="state-tg"
+          d="M 295,340 L 325,335 L 345,350 L 345,380 L 325,390 L 300,385 L 285,365 Z"
+          data-state="Telangana"/>
+        <!-- Andhra Pradesh -->
+        <path class="india-state mild" id="state-ap"
+          d="M 325,390 L 345,380 L 370,380 L 380,405 L 370,435 L 345,445 L 320,440 L 305,415 Z"
+          data-state="Andhra Pradesh"/>
+        <!-- Karnataka -->
+        <path class="india-state base" id="state-ka"
+          d="M 255,370 L 285,365 L 305,385 L 305,415 L 290,440 L 260,445 L 245,420 L 240,395 L 245,375 Z"
+          data-state="Karnataka"/>
+        <!-- Goa -->
+        <ellipse class="india-state safe" cx="245" cy="425" rx="10" ry="8" data-state="Goa"/>
+        <!-- Kerala -->
+        <path class="india-state safe" id="state-kl"
+          d="M 250,445 L 260,445 L 270,470 L 268,500 L 255,515 L 245,510 L 242,480 Z"
+          data-state="Kerala"/>
+        <!-- Tamil Nadu -->
+        <path class="india-state mild" id="state-tn"
+          d="M 290,445 L 320,440 L 340,450 L 345,480 L 330,510 L 305,530 L 280,520 L 270,495 L 275,465 Z"
+          data-state="Tamil Nadu"/>
+        <!-- Assam / Northeast -->
+        <path class="india-state hot" id="state-as"
+          d="M 455,185 L 490,178 L 510,195 L 515,215 L 495,225 L 470,220 L 455,205 Z"
+          data-state="Assam"/>
+        <path class="india-state mild"
+          d="M 495,178 L 530,172 L 545,190 L 530,205 L 505,200 Z"
+          data-state="Arunachal Pradesh"/>
+        <path class="india-state base"
+          d="M 495,225 L 515,215 L 525,230 L 510,240 L 495,238 Z"
+          data-state="Meghalaya/Nagaland"/>
+        <path class="india-state warm"
+          d="M 510,240 L 530,232 L 540,248 L 525,260 L 510,255 Z"
+          data-state="Manipur/Mizoram"/>
+
+        <!-- Coastline highlight -->
+        <path fill="none" stroke="rgba(50,212,245,0.15)" stroke-width="1.5"
+          d="M 135,285 L 125,305 L 130,330 L 145,350 L 148,375 L 145,400 L 155,430 L 170,445 L 195,455 L 215,465 L 240,475 L 255,515 L 268,500 L 280,520 L 305,530 L 330,510 L 345,480 L 340,455 M 380,405 L 400,420 L 425,430 L 450,430 L 460,415 L 455,395 M 425,330 L 445,340 L 460,360 L 458,385 L 450,405"/>
+
+        <!-- Incident Markers Group -->
+        <g id="incidentMarkers"></g>
+
+        <!-- Safe Zone Indicators -->
+        <g id="safeZones" style="display:none">
+          <circle cx="230" cy="200" r="25" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6" class="safe-zone-ring"/>
+          <circle cx="380" cy="290" r="20" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6" class="safe-zone-ring"/>
+          <circle cx="270" cy="400" r="18" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6" class="safe-zone-ring"/>
+          <circle cx="340" cy="490" r="22" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6" class="safe-zone-ring"/>
+          <text x="230" y="196" text-anchor="middle" font-size="8" fill="var(--green)" font-family="monospace" opacity="0.8">SAFE ZONE</text>
+          <text x="380" y="286" text-anchor="middle" font-size="8" fill="var(--green)" font-family="monospace" opacity="0.8">RELIEF CAMP</text>
+          <text x="270" y="396" text-anchor="middle" font-size="8" fill="var(--green)" font-family="monospace" opacity="0.8">SHELTER</text>
+          <text x="340" y="486" text-anchor="middle" font-size="8" fill="var(--green)" font-family="monospace" opacity="0.8">EVAC POINT</text>
+        </g>
+
+        <!-- Heatmap overlay -->
+        <g id="heatmapLayer" style="display:none">
+          <circle cx="480" cy="195" r="60" fill="url(#glow-red)" opacity="0.7"/>
+          <circle cx="165" cy="305" r="50" fill="url(#glow-amber)" opacity="0.6"/>
+          <circle cx="390" cy="185" r="45" fill="url(#glow-red)" opacity="0.6"/>
+          <circle cx="425" cy="310" r="40" fill="url(#glow-amber)" opacity="0.5"/>
+        </g>
+
+        <!-- Compass Rose -->
+        <g transform="translate(660, 740)">
+          <text text-anchor="middle" font-size="8" fill="var(--text3)" font-family="monospace">N</text>
+          <line x1="0" y1="5" x2="0" y2="20" stroke="var(--text3)" stroke-width="1"/>
+          <polygon points="0,-2 3,8 -3,8" fill="var(--text3)"/>
+          <circle cx="0" cy="13" r="8" fill="none" stroke="var(--border)" stroke-width="0.5"/>
+        </g>
+        <!-- Scale bar -->
+        <g transform="translate(70, 760)">
+          <line x1="0" y1="0" x2="60" y2="0" stroke="var(--text3)" stroke-width="1"/>
+          <line x1="0" y1="-4" x2="0" y2="4" stroke="var(--text3)" stroke-width="1"/>
+          <line x1="60" y1="-4" x2="60" y2="4" stroke="var(--text3)" stroke-width="1"/>
+          <text text-anchor="middle" x="30" y="-6" font-size="7" fill="var(--text3)" font-family="monospace">500 km</text>
+        </g>
+      </svg>
+
+      <div class="map-legend">
+        <div class="legend-title">INCIDENT SEVERITY</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--critical)"></div> Critical</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--high)"></div> High</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--medium)"></div> Medium</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--low)"></div> Low / Safe Zone</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div> Responder Active</div>
+      </div>
+    </div>
+
+    <!-- Sidebar Right: Detail / Responders -->
+    <div class="sidebar-right">
+      <div id="incidentDetailPanel">
+        <div class="panel-header">
+          <span class="panel-title">Incident Detail</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)" id="incDetailId">—</span>
+        </div>
+        <div class="inc-detail-panel" id="incDetailContent">
+          <div style="padding:20px;text-align:center;color:var(--text3)">
+            <div style="font-size:32px;margin-bottom:8px">⊙</div>
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px">SELECT AN INCIDENT</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-div">AVAILABLE RESPONDERS</div>
+      <div class="responder-list" id="responderList"></div>
+
+      <div class="section-div">AI SITUATION ANALYSIS</div>
+      <div class="ai-box">
+        <div class="ai-label">▶ AI ENGINE — LIVE ASSESSMENT</div>
+        <div class="ai-text" id="aiAnalysis">Analyzing 47 active incidents across 12 states. High concentration detected in Brahmaputra basin and coastal Odisha. Recommend pre-positioning rescue teams at Guwahati and Bhubaneswar staging areas. Cyclone trajectory suggests escalation in next 6-8 hours.</div>
+      </div>
+
+      <div class="section-div">RESOURCE STATUS</div>
+      <div style="padding:10px 12px;">
+        <div class="gauge-row">
+          <span class="gauge-label">NDRF Teams</span>
+          <div class="gauge-track"><div class="gauge-fill" style="width:62%;background:var(--blue)"></div></div>
+          <span class="gauge-val">62%</span>
+        </div>
+        <div class="gauge-row">
+          <span class="gauge-label">Helicopters</span>
+          <div class="gauge-track"><div class="gauge-fill" style="width:40%;background:var(--amber)"></div></div>
+          <span class="gauge-val">40%</span>
+        </div>
+        <div class="gauge-row">
+          <span class="gauge-label">Medical Units</span>
+          <div class="gauge-track"><div class="gauge-fill" style="width:75%;background:var(--green)"></div></div>
+          <span class="gauge-val">75%</span>
+        </div>
+        <div class="gauge-row">
+          <span class="gauge-label">Relief Supplies</span>
+          <div class="gauge-track"><div class="gauge-fill" style="width:55%;background:var(--cyan)"></div></div>
+          <span class="gauge-val">55%</span>
+        </div>
+      </div>
+
+      <div class="section-div">WEATHER ALERTS</div>
+      <div class="weather-strip">
+        <div class="weather-item">
+          <span class="weather-icon">🌊</span>
+          <div class="weather-val">Assam</div>
+          <div class="weather-loc">Flood Risk</div>
+        </div>
+        <div class="weather-item">
+          <span class="weather-icon">🌀</span>
+          <div class="weather-val">Odisha</div>
+          <div class="weather-loc">Cyclone Cat3</div>
+        </div>
+        <div class="weather-item">
+          <span class="weather-icon">⛰</span>
+          <div class="weather-val">HP</div>
+          <div class="weather-loc">Landslide</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT PAGE -->
+<div class="page" id="page-report">
+  <div style="display:grid;grid-template-columns:1fr 1fr;height:100%;gap:0;">
+    <!-- Form -->
+    <div style="background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:20px;">
+      <div class="cmd-header" style="padding:0 0 16px 0;border-bottom:1px solid var(--border);margin-bottom:16px;">
+        <div>
+          <div class="cmd-title" style="font-size:22px;color:var(--accent)">REPORT DISASTER</div>
+          <div class="cmd-subtitle">Real-time incident submission with geo-tagging</div>
+        </div>
+      </div>
+
+      <div class="report-form">
+        <div>
+          <label class="form-label">Disaster Type</label>
+          <div class="radio-group" id="disasterTypeGroup">
+            <div class="radio-chip selected" data-val="FLOOD">🌊 FLOOD</div>
+            <div class="radio-chip" data-val="EARTHQUAKE">🌍 EARTHQUAKE</div>
+            <div class="radio-chip" data-val="CYCLONE">🌀 CYCLONE</div>
+            <div class="radio-chip" data-val="LANDSLIDE">⛰ LANDSLIDE</div>
+            <div class="radio-chip" data-val="FIRE">🔥 FIRE</div>
+            <div class="radio-chip" data-val="DROUGHT">☀ DROUGHT</div>
+            <div class="radio-chip" data-val="STORM">⛈ STORM</div>
+            <div class="radio-chip" data-val="OTHER">❓ OTHER</div>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Severity Level</label>
+          <div class="severity-picker">
+            <button class="sev-btn selected" data-sev="CRITICAL">CRITICAL</button>
+            <button class="sev-btn" data-sev="HIGH">HIGH</button>
+            <button class="sev-btn" data-sev="MEDIUM">MEDIUM</button>
+            <button class="sev-btn" data-sev="LOW">LOW</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Location / Address</label>
+          <input class="form-input" type="text" id="reportLocation" placeholder="Village, District, State...">
+          <button class="locate-btn" onclick="autoLocate()">📍 AUTO-DETECT MY LOCATION</button>
+          <div class="coords-display" id="coordsDisplay" style="display:none"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label class="form-label">People Affected (Approx)</label>
+            <input class="form-input" type="number" id="reportAffected" placeholder="0">
+          </div>
+          <div>
+            <label class="form-label">Reporter Name</label>
+            <input class="form-input" type="text" id="reporterName" placeholder="Name (optional)">
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Contact Number</label>
+          <input class="form-input" type="tel" id="reportContact" placeholder="+91 XXXXX XXXXX">
+        </div>
+
+        <div>
+          <label class="form-label">Situation Description</label>
+          <textarea class="form-textarea" id="reportDescription" placeholder="Describe the situation: extent, immediate needs, access routes..."></textarea>
+        </div>
+
+        <div>
+          <label class="form-label">Immediate Needs</label>
+          <div class="radio-group" id="needsGroup">
+            <div class="radio-chip" data-val="RESCUE">🚁 RESCUE</div>
+            <div class="radio-chip" data-val="MEDICAL">🏥 MEDICAL</div>
+            <div class="radio-chip" data-val="FOOD">🍱 FOOD</div>
+            <div class="radio-chip" data-val="SHELTER">🏠 SHELTER</div>
+            <div class="radio-chip" data-val="WATER">💧 WATER</div>
+            <div class="radio-chip" data-val="EVAC">🚌 EVAC</div>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Attach Media (Photo / Video)</label>
+          <div class="upload-area" onclick="handleMediaUpload()">
+            <span class="upload-icon">📷</span>
+            <div class="upload-text">Click or tap to attach geo-tagged photos/videos</div>
+            <div style="font-size:9px;color:var(--text3);margin-top:3px;font-family:var(--font-mono)">JPG, PNG, MP4 · MAX 50MB</div>
+          </div>
+          <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none" onchange="previewMedia(event)">
+          <div id="mediaPreview"></div>
+        </div>
+
+        <button class="submit-btn" onclick="submitReport()">
+          ⚡ SUBMIT EMERGENCY REPORT
+        </button>
+
+        <div style="font-size:10px;color:var(--text3);text-align:center;font-family:var(--font-mono)">
+          Reports are verified within 2-5 minutes · Duplicate detection enabled
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Submission Status + Recent -->
+    <div style="background:var(--bg);overflow-y:auto;padding:20px;">
+      <div class="cmd-header" style="padding:0 0 16px 0;border-bottom:1px solid var(--border);margin-bottom:16px;">
+        <div>
+          <div class="cmd-title" style="font-size:18px;">SYSTEM FLOW</div>
+          <div class="cmd-subtitle">How your report gets routed</div>
+        </div>
+      </div>
+
+      <div class="flow-diagram">
+        <div class="flow-node active-node">
+          <span class="flow-icon">📡</span>
+          <div class="flow-name">REPORT</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active-node">
+          <span class="flow-icon">🔍</span>
+          <div class="flow-name">VERIFY</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <span class="flow-icon">📊</span>
+          <div class="flow-name">TRIAGE</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <span class="flow-icon">📣</span>
+          <div class="flow-name">DISPATCH</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <span class="flow-icon">🚁</span>
+          <div class="flow-name">RESPOND</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="panel-header" style="padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:10px;">
+          <span class="panel-title">RECENTLY SUBMITTED</span>
+        </div>
+        <div id="recentReports"></div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="panel-header" style="padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:10px;">
+          <span class="panel-title">VERIFICATION QUEUE</span>
+        </div>
+        <div id="verificationQueue"></div>
+      </div>
+
+      <div class="ai-box" style="margin:0;margin-top:16px;">
+        <div class="ai-label">▶ DUPLICATE DETECTION ENGINE</div>
+        <div class="ai-text">5 near-duplicate reports for "Brahmaputra flooding" consolidated into INC-0042. Cross-reference algorithm running on 847 reports. Misinformation flagging: 0 suspicious sources in last 6 hours. Source credibility scoring: active.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COORDINATION PAGE -->
+<div class="page" id="page-coord">
+  <div class="coord-grid">
+    <div class="coord-column">
+      <div class="coord-col-header">
+        <span class="coord-col-title" style="color:var(--accent)">⚠ PENDING</span>
+        <span class="coord-col-count" id="pendingCount">8</span>
+      </div>
+      <div class="coord-items" id="coordPending"></div>
+    </div>
+    <div class="coord-column">
+      <div class="coord-col-header">
+        <span class="coord-col-title" style="color:var(--amber)">⚡ IN PROGRESS</span>
+        <span class="coord-col-count" id="inprogressCount">5</span>
+      </div>
+      <div class="coord-items" id="coordInProgress"></div>
+    </div>
+    <div class="coord-column">
+      <div class="coord-col-header">
+        <span class="coord-col-title" style="color:var(--green)">✓ RESOLVED</span>
+        <span class="coord-col-count" id="resolvedCount">23</span>
+      </div>
+      <div class="coord-items" id="coordResolved"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ANALYTICS PAGE -->
+<div class="page" id="page-dashboard">
+  <div class="dashboard-page">
+    <div class="cmd-header" style="padding:0 0 16px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <div class="cmd-title" style="font-size:22px;">ANALYTICS DASHBOARD</div>
+        <div class="cmd-subtitle">Real-time disaster intelligence and response metrics · Updated live</div>
+      </div>
+    </div>
+    <div class="dashboard-grid">
+      <div class="dash-card">
+        <div class="dash-card-title">INCIDENT TREND (24H)</div>
+        <div class="mini-bar-chart" id="incidentTrendChart"></div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);margin-top:6px;display:flex;justify-content:space-between;">
+          <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>NOW</span>
+        </div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">DISASTER TYPE BREAKDOWN</div>
+        <div class="type-breakdown" id="typeBreakdown"></div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">RESPONSE TIMELINE</div>
+        <div class="response-timeline" id="responseTimeline"></div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">STATE ACTIVITY HEATMAP</div>
+        <div class="heatmap-grid" id="stateHeatmap"></div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);margin-top:6px;">Low → High incident density per state (last 7 days)</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">KEY METRICS</div>
+        <div id="keyMetrics"></div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">REPORT SOURCE DISTRIBUTION</div>
+        <div style="padding:10px 0;" id="sourceDistribution"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ALERTS PAGE -->
+<div class="page" id="page-alerts">
+  <div style="display:grid;grid-template-columns:1fr 320px;height:100%;">
+    <div style="overflow-y:auto;padding:20px;">
+      <div class="cmd-header" style="padding:0 0 16px 0;border-bottom:1px solid var(--border);margin-bottom:16px;">
+        <div>
+          <div class="cmd-title" style="font-size:22px;">ALERT CENTER</div>
+          <div class="cmd-subtitle">Notifications from all channels — verified and unverified</div>
+        </div>
+      </div>
+      <div class="notif-panel" id="alertsPanel"></div>
+    </div>
+    <div style="background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;padding:16px;">
+      <div class="panel-title" style="margin-bottom:12px;">BROADCAST ALERT</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div>
+          <label class="form-label">Alert Zone</label>
+          <select class="form-select">
+            <option>All India</option>
+            <option>Assam</option>
+            <option>Odisha</option>
+            <option>Gujarat</option>
+            <option>Bihar</option>
+            <option>West Bengal</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Alert Type</label>
+          <select class="form-select">
+            <option>Evacuation Order</option>
+            <option>Warning</option>
+            <option>Advisory</option>
+            <option>All Clear</option>
+            <option>Relief Camp Open</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Message</label>
+          <textarea class="form-textarea" placeholder="Enter alert message for citizens and responders..." style="height:80px;"></textarea>
+        </div>
+        <div>
+          <label class="form-label">Priority</label>
+          <div class="severity-picker">
+            <button class="sev-btn selected" data-sev="CRITICAL">P1</button>
+            <button class="sev-btn" data-sev="HIGH">P2</button>
+            <button class="sev-btn" data-sev="MEDIUM">P3</button>
+            <button class="sev-btn" data-sev="LOW">INFO</button>
+          </div>
+        </div>
+        <button class="submit-btn" onclick="broadcastAlert()" style="margin-top:8px;">📢 BROADCAST ALERT</button>
+      </div>
+
+      <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+        <div class="panel-title" style="margin-bottom:10px;">CHANNEL STATUS</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;">
+            <span style="font-size:11px;">📱 SMS Broadcast</span>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--green);">ACTIVE</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;">
+            <span style="font-size:11px;">📻 Emergency Radio</span>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--green);">ACTIVE</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;">
+            <span style="font-size:11px;">📺 Doordarshan EAS</span>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--amber);">STANDBY</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;">
+            <span style="font-size:11px;">🌐 Web Portal Push</span>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--green);">ACTIVE</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;">
+            <span style="font-size:11px;">⚡ NDMA Direct Feed</span>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--green);">ACTIVE</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;">
+            <span style="font-size:11px;">🛰 Satellite Uplink</span>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--accent);">DEGRADED</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- <script src="app.js"></script> -->
+ <script src="server.js"></script>
+</body>
+</html>
