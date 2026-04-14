@@ -98,10 +98,10 @@ Built to improve disaster response systems and provide a centralized platform fo
 
 ---
 
-## 👨‍💻 Author
-
 **Harsh Kumar**
-Frontend Developer | Student
+ | Student
+ << Working on Frontend Designing
+ << working on web developer
 
 ---
 
